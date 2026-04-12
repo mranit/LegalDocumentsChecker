@@ -1,0 +1,14 @@
+000100 IDENTIFICATION DIVISION.                                         00010000
+000200 PROGRAM-ID. CA21G082.                                            00020000
+000300 ENVIRONMENT DIVISION.                                            00030000
+000400 DATA DIVISION.                                                   00040000
+000410 WORKING-STORAGE SECTION.                                         00041001
+000420 01  WS-CALC      PIC 9(03)V99.                                   00042002
+000500 LINKAGE SECTION.                                                 00050000
+000600 01  LK-MARKS     PIC 9(02)V9(02).                                00060002
+000700 01  LK-PERC-RND  PIC 9(03).                                      00070002
+001000 PROCEDURE DIVISION USING LK-MARKS, LK-PERC-RND.                  00100000
+001100     COMPUTE WS-CALC = (LK-MARKS / 50) * 100.                     00110000
+001200     COMPUTE LK-PERC-RND ROUNDED = WS-CALC.                       00120000
+001300     GOBACK.                                                      00130000
+

@@ -1,0 +1,128 @@
+000100 IDENTIFICATION DIVISION.                                         00010001
+000200 PROGRAM-ID. CA11G082.                                            00020001
+000300 ENVIRONMENT DIVISION.                                            00030001
+000400 INPUT-OUTPUT SECTION.                                            00040001
+000500 FILE-CONTROL.                                                    00050001
+000600      SELECT INFILE ASSIGN TO PS3IN                               00060001
+000700      ORGANIZATION IS SEQUENTIAL                                  00070001
+000800      ACCESS MODE IS SEQUENTIAL                                   00080001
+000900      FILE STATUS IS WS-FS-IN.                                    00090001
+001100      SELECT OUTFILE ASSIGN TO KSDSOUT                            00100001
+001200      ORGANIZATION IS INDEXED                                     00110001
+001300      ACCESS MODE IS RANDOM                                       00120001
+001310      RECORD KEY IS OUT-ID-NEW                                    00130001
+001400      FILE STATUS IS WS-FS-OUT.                                   00140001
+001500 DATA DIVISION.                                                   00150001
+001600 FILE SECTION.                                                    00160001
+001700 FD  INFILE RECORDING MODE F.                                     01700 01
+001800 01  STU-REC-IN.                                                  00180001
+001900     05 IN-ID        PIC 9(5).                                    00190001
+002000     05 FILLER       PIC X(1).                                    00200001
+002100     05 IN-FNAME     PIC X(10).                                   00210001
+002200     05 FILLER       PIC X(1).                                    00220001
+002300     05 IN-LNAME     PIC X(10).                                   00230001
+002400     05 FILLER       PIC X(1).                                    00240001
+002500     05 IN-MARKS     PIC 9(2).9(02).                              00250001
+002600     05 FILLER       PIC X(47).                                   00260001
+002700 FD  OUTFILE.                                                     00270001
+002800 01  STU-REC-OUT.                                                 00280001
+002900     05 OUT-ID-NEW   PIC X(6).                                    00290001
+003000     05 FILLER       PIC X(1) VALUE SPACES.                       00300001
+003100     05 OUT-NAME     PIC X(15).                                   00310001
+003200     05 FILLER       PIC X(1) VALUE SPACES.                       00320001
+003300     05 OUT-MARKS    PIC 9(2).9(02).                              00330001
+003400     05 FILLER       PIC X(1) VALUE SPACES.                       00340001
+003500     05 OUT-PERC     PIC 9(2).                                    00350001
+003600     05 FILLER       PIC X(1) VALUE SPACES.                       00360001
+003700     05 OUT-RESULT   PIC X(30).                                   00370001
+003800     05 FILLER       PIC X(18) VALUE SPACES.                      00380001
+003900 WORKING-STORAGE SECTION.                                         00390001
+003910 01  WS-SUB-PGM      PIC X(08) VALUE 'CA21G082'.
+004000 01  WS-FS-IN        PIC X(02).                                   00400001
+004100 01  WS-FS-OUT       PIC X(02).                                   00410001
+004200 01  WS-PERC-RND     PIC 9(03).                                   00420001
+004300 01  WS-EOF          PIC X(01) VALUE 'N'.                         00430001
+004310 01  WS-MARKS        PIC 9(02)V9(02).
+004330
+004400 PROCEDURE DIVISION.                                              00440001
+004500 0000-MAIN-PARA.                                                  00450001
+004600     PERFORM 1000-OPEN-FILES-PARA THRU 1000-EXIT-PARA.            00460001
+004610     PERFORM 0100-INIT-PARA THRU 0100-EXIT-PARA.
+004700     PERFORM 2000-READ-FILE-PARA THRU 2000-EXIT-PARA.             00470001
+004800     PERFORM 3000-PROCESS-PARA THRU 3000-EXIT-PARA                00480001
+004900             UNTIL WS-EOF = 'Y'.                                  00490001
+005000     PERFORM 9000-CLOSE-FILES-PARA THRU 9000-EXIT-PARA.           00500001
+005100     STOP RUN.                                                    00510001
+005110 0100-INIT-PARA.
+005120     INITIALIZE STU-REC-IN STU-REC-OUT.
+005121     MOVE SPACES TO STU-REC-OUT.
+005130 0100-EXIT-PARA.
+005140     EXIT.
+005200 1000-OPEN-FILES-PARA.                                            00520001
+005300     OPEN INPUT INFILE                                            00530001
+005400          OUTPUT OUTFILE.
+005500     IF WS-FS-IN NOT = '00'                                       00550001
+005600        DISPLAY 'ERROR OPENING PS3IN. STATUS: ' WS-FS-IN          00560001
+005700        CALL 'ILBOABN0' USING WS-FS-IN                            00570001
+005800     END-IF.                                                      00580001
+005900     IF WS-FS-OUT NOT = '00'                                      00590001
+006000        DISPLAY 'ERROR OPENING KSDSOUT. STATUS: ' WS-FS-OUT       00600001
+006100        CALL 'ILBOABN0' USING WS-FS-OUT                           00610001
+006200     END-IF.                                                      00620001
+006300 1000-EXIT-PARA.                                                  00630001
+006400     EXIT.                                                        00640001
+006500 2000-READ-FILE-PARA.                                             00650001
+006600     READ INFILE                                                  00660001
+006700       AT END                                                     00670001
+006800          MOVE 'Y' TO WS-EOF                                      00680001
+006900       NOT AT END                                                 00690001
+007000          IF WS-FS-IN NOT = '00'                                  00700001
+007100             DISPLAY 'READ ERROR ON PS3IN. STATUS: ' WS-FS-IN     00710001
+007200             CALL 'ILBOABN0' USING WS-FS-IN                       00720001
+007300          END-IF                                                  00730001
+007400     END-READ.                                                    00740001
+007500 2000-EXIT-PARA.                                                  00750001
+007600     EXIT.                                                        00760001
+007700 3000-PROCESS-PARA.                                               00770001
+007800     IF IN-ID IS NUMERIC AND
+007900        IN-FNAME NOT = SPACES AND
+008000        IN-LNAME IS ALPHABETIC AND
+008100        IN-MARKS(1:2) IS NUMERIC AND
+008200        IN-MARKS(3:1) = '.' AND
+008201        IN-MARKS(4:2) IS NUMERIC
+008300         STRING 'S' IN-ID DELIMITED BY SIZE INTO OUT-ID-NEW       00820001
+008500         INSPECT IN-FNAME REPLACING ALL '@' BY ' ',               00830001
+008600                                    ALL '$' BY ' ',               00840001
+008700                                    ALL '%' BY ' ',               00850001
+008800                                    ALL '&' BY ' '                00860001
+009000         STRING IN-LNAME(1:1) '.' IN-FNAME DELIMITED BY '  '      00880001
+009100                INTO OUT-NAME                                     00890001
+009200         MOVE IN-MARKS TO OUT-MARKS                               00900001
+009220         MOVE IN-MARKS TO WS-MARKS
+009300         CALL WS-SUB-PGM USING BY REFERENCE WS-MARKS              00910001
+009310                               WS-PERC-RND
+009400         MOVE WS-PERC-RND TO OUT-PERC                             00920001
+009500         IF WS-PERC-RND >= 70                                     00930001
+009600            MOVE "CONGRATULATIONS!!!" TO OUT-RESULT               00940001
+009700         ELSE                                                     00950001
+009800            MOVE "BETTER LUCK NEXT TIME!!!" TO OUT-RESULT         00960001
+009900         END-IF                                                   00970001
+010000         PERFORM 4000-WRITE-FILE-PARA THRU 4000-WRITE-FILE-EXIT   00980001
+010100     END-IF.                                                      00990001
+010200     PERFORM 2000-READ-FILE-PARA THRU 2000-EXIT-PARA.             01000001
+010300 3000-EXIT-PARA.                                                  01010001
+010400     EXIT.                                                        01020001
+010500 4000-WRITE-FILE-PARA.                                            01030001
+010600     WRITE STU-REC-OUT.                                           01040001
+010700     IF WS-FS-OUT NOT = '00'                                      01050001
+010800        DISPLAY 'WRITE ERROR ON KSDSOUT. STATUS: ' WS-FS-OUT      01060001
+010900        CALL 'ILBOABN0' USING WS-FS-OUT                           01070001
+011000     END-IF.                                                      01080001
+011100 4000-WRITE-FILE-EXIT.                                            01090001
+011200     EXIT.                                                        01100001
+011300 9000-CLOSE-FILES-PARA.                                           01110001
+011400     CLOSE INFILE                                                 01120001
+011500        OUTFILE.                                                  01130001
+011600 9000-EXIT-PARA.                                                  01140001
+011700     EXIT.                                                        01150001
+
